@@ -12,6 +12,8 @@ public class NetworkedServer : MonoBehaviour
     int hostID;
     int socketPort = 5491;
 
+    LinkedList<PlayerAccount> playerAccounts;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -21,6 +23,8 @@ public class NetworkedServer : MonoBehaviour
         unreliableChannelID = config.AddChannel(QosType.Unreliable);
         HostTopology topology = new HostTopology(config, maxConnections);
         hostID = NetworkTransport.AddHost(topology, socketPort, null);
+
+        playerAccounts = new LinkedList<PlayerAccount> ();
 
     }
 
@@ -66,5 +70,98 @@ public class NetworkedServer : MonoBehaviour
     private void ProcessRecievedMsg(string msg, int id)
     {
         Debug.Log("msg recieved = " + msg + ".  connection id = " + id);
+
+        string[] csv = msg.Split(',');
+
+        int signifier = int.Parse(csv[0]);
+
+
+        if (signifier == ClientToServerSignifiers.CreateAccount)
+        {
+            string name = csv[1];
+            string pass = csv[1];
+
+            bool usernameAlreadyInUse = false;
+
+            foreach(PlayerAccount pa in playerAccounts)
+            {
+                if(pa.username == name)
+                {
+                    usernameAlreadyInUse = true;
+                    break;
+                }
+            }
+
+            if(!usernameAlreadyInUse)
+            {
+                PlayerAccount pa = new PlayerAccount(name, pass);
+                playerAccounts.AddLast(pa);
+                SendMessageToClient(ServerToClientSignifiers.accountSuccess + "", id);
+            }
+            else
+            {
+                SendMessageToClient(ServerToClientSignifiers.accountFail + "", id);
+            }
+           
+        }
+        else if (signifier == ClientToServerSignifiers.Login)
+        {
+            string name = csv[1];
+            string pass = csv[1];
+
+            bool usernameNotFound = false;
+
+            foreach (PlayerAccount pa in playerAccounts)
+            {
+                if (pa.username == name)
+                {
+                    usernameNotFound = true;
+                   if(pa.password == pass)
+                    {
+                        SendMessageToClient(ServerToClientSignifiers.loginSuccess + "", id);
+                    }
+                    else
+                    {
+                        SendMessageToClient(ServerToClientSignifiers.loginFail + "", id);
+                    }
+                }
+            }
+            if(!usernameNotFound)
+            {
+                SendMessageToClient(ServerToClientSignifiers.loginFail + "", id);
+            }
+        }
+     
     }
+}
+
+public class PlayerAccount
+{
+    public string username;
+    public string password;
+
+    public PlayerAccount(string username, string password)
+    {
+        this.username = username;
+        this.password = password;
+    }
+}
+
+
+public static class ClientToServerSignifiers
+{
+    public const int Login = 1;
+    public const int CreateAccount = 2;
+}
+
+public static class ServerToClientSignifiers
+{
+    //  public const int LoginResponse = 1;
+   public const int loginSuccess = 1;
+   public const int accountSuccess = 2;
+
+   public const int loginFail = 3;
+   public const int accountFail = 4;
+
+
 }
