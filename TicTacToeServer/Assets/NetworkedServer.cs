@@ -14,6 +14,8 @@ public class NetworkedServer : MonoBehaviour
 
     LinkedList<PlayerAccount> playerAccounts;
 
+    int playerWaitingForMatch = -1;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -131,7 +133,33 @@ public class NetworkedServer : MonoBehaviour
                 SendMessageToClient(ServerToClientSignifiers.loginFail + "", id);
             }
         }
-     
+
+
+        else if(signifier == ClientToServerSignifiers.AddToGameRoomQueue)
+        {
+
+            if(playerWaitingForMatch == -1)
+            {
+                playerWaitingForMatch = id;
+            }
+            else
+            {
+                GameSession gs = new GameSession(playerWaitingForMatch, id); //GameSession = GameRoom
+
+                SendMessageToClient(ServerToClientSignifiers.GameSessionStarted + "", id);
+                SendMessageToClient(ServerToClientSignifiers.GameSessionStarted + "", playerWaitingForMatch);
+
+                playerWaitingForMatch = -1;
+            }
+
+
+        }
+
+        else if (signifier == ClientToServerSignifiers.TicTacToePlay)
+        {
+            Debug.Log("Joining game!");
+        }
+
     }
 }
 
@@ -147,11 +175,30 @@ public class PlayerAccount
     }
 }
 
+public class GameSession
+{
+    //Hold 2 clients
+    int playerID1, playerID2;
+
+    public GameSession(int playerID1, int playerID2)
+    {
+        this.playerID1 = playerID1;
+        this.playerID2 = playerID2;
+    }
+}
+
 
 public static class ClientToServerSignifiers
 {
     public const int Login = 1;
+
     public const int CreateAccount = 2;
+
+    public const int AddToGameRoomQueue = 3;
+    public const int TicTacToePlay = 4;
+
+
+
 }
 
 public static class ServerToClientSignifiers
@@ -162,6 +209,8 @@ public static class ServerToClientSignifiers
 
    public const int loginFail = 3;
    public const int accountFail = 4;
+
+    public const int GameSessionStarted = 5;
 
 
 }
