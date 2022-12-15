@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -16,6 +17,8 @@ public class NetworkedServer : MonoBehaviour
 
     int playerWaitingForMatch = -1;
 
+    LinkedList<GameSession> gameSessions;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -27,6 +30,7 @@ public class NetworkedServer : MonoBehaviour
         hostID = NetworkTransport.AddHost(topology, socketPort, null);
 
         playerAccounts = new LinkedList<PlayerAccount> ();
+        gameSessions = new LinkedList<GameSession> ();
 
     }
 
@@ -145,6 +149,7 @@ public class NetworkedServer : MonoBehaviour
             else
             {
                 GameSession gs = new GameSession(playerWaitingForMatch, id); //GameSession = GameRoom
+                gameSessions.AddLast(gs);
 
                 SendMessageToClient(ServerToClientSignifiers.GameSessionStarted + "", id);
                 SendMessageToClient(ServerToClientSignifiers.GameSessionStarted + "", playerWaitingForMatch);
@@ -158,9 +163,36 @@ public class NetworkedServer : MonoBehaviour
         else if (signifier == ClientToServerSignifiers.TicTacToePlay)
         {
             Debug.Log("Joining game!");
+
+           GameSession gs = FindGameSessionWithPlayerID(id);
+
+            if(gs.playerID1 == id)
+            {
+                SendMessageToClient(ServerToClientSignifiers.OpponentTicTacToePlay + "", gs.playerID2);
+            }
+            else
+            {
+                SendMessageToClient(ServerToClientSignifiers.OpponentTicTacToePlay + "", gs.playerID1);
+            }
+
         }
 
     }
+
+    private GameSession FindGameSessionWithPlayerID(int id)
+    {
+        foreach(GameSession gs in gameSessions)
+        {
+            if(gs.playerID1 == id || gs.playerID2 == id)
+            {
+                return gs;
+            }        
+        }
+        return null;
+    }
+
+
+
 }
 
 public class PlayerAccount
@@ -178,7 +210,7 @@ public class PlayerAccount
 public class GameSession
 {
     //Hold 2 clients
-    int playerID1, playerID2;
+    public int playerID1, playerID2;
 
     public GameSession(int playerID1, int playerID2)
     {
@@ -186,7 +218,6 @@ public class GameSession
         this.playerID2 = playerID2;
     }
 }
-
 
 public static class ClientToServerSignifiers
 {
@@ -211,6 +242,8 @@ public static class ServerToClientSignifiers
    public const int accountFail = 4;
 
     public const int GameSessionStarted = 5;
+
+    public const int OpponentTicTacToePlay = 6;
 
 
 }
