@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
@@ -11,7 +12,7 @@ public class NetworkedServer : MonoBehaviour
     int reliableChannelID;
     int unreliableChannelID;
     int hostID;
-    int socketPort = 5491;
+    int socketPort = 5492;
 
     LinkedList<PlayerAccount> playerAccounts;
 
@@ -141,7 +142,7 @@ public class NetworkedServer : MonoBehaviour
 
         else if(signifier == ClientToServerSignifiers.AddToGameRoomQueue)
         {
-
+            Debug.Log("Waiting for match");
             if(playerWaitingForMatch == -1)
             {
                 playerWaitingForMatch = id;
@@ -166,14 +167,17 @@ public class NetworkedServer : MonoBehaviour
 
            GameSession gs = FindGameSessionWithPlayerID(id);
 
-            if(gs.playerID1 == id)
+            if(gs != null)
             {
-                SendMessageToClient(ServerToClientSignifiers.OpponentTicTacToePlay + "", gs.playerID2);
-            }
-            else
-            {
-                SendMessageToClient(ServerToClientSignifiers.OpponentTicTacToePlay + "", gs.playerID1);
-            }
+                if (gs.playerID1 == id)
+                {
+                    SendMessageToClient(ServerToClientSignifiers.OpponentTicTacToePlay + "", gs.playerID2);
+                }
+                else
+                {
+                    SendMessageToClient(ServerToClientSignifiers.OpponentTicTacToePlay + "", gs.playerID1);
+                }
+            }         
 
         }
 
@@ -190,9 +194,6 @@ public class NetworkedServer : MonoBehaviour
         }
         return null;
     }
-
-
-
 }
 
 public class PlayerAccount
