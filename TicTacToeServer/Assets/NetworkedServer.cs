@@ -12,7 +12,7 @@ public class NetworkedServer : MonoBehaviour
     int reliableChannelID;
     int unreliableChannelID;
     int hostID;
-    int socketPort = 5492;
+    int socketPort = 5491;
 
     LinkedList<PlayerAccount> playerAccounts;
 
